@@ -49,10 +49,6 @@ class spJsonRPC
 
     public function __call($method, array $params)
     {
-        if (!is_scalar($method)) {
-            throw new Exception('Method name has no scalar value');
-        }
-
         # TODO: Notification support
         $currentId = $this->generateID();
 
@@ -62,18 +58,21 @@ class spJsonRPC
             'params'  => $params,
             'id'      => $currentId
         )));
+        if (empty($response)) {
+            throw new SPException('Server no response');
+        }
         $response = json_decode($response,true);
 
         if (!isset($response['jsonrpc']) || $response['jsonrpc'] != '2.0') {
-            throw new Exception('Wrong version');
+            throw new SPException('Wrong version');
         }
         #
         if ($response['id'] !== $currentId) {
-            throw new Exception('Id mismatch (request:'.$currentId.'; response: '.$response['id'].')');
+            throw new SPException('Id mismatch (request:'.$currentId.'; response: '.$response['id'].')');
         }
 
         if (isset($response['error'])) {
-            throw new Exception('Request error: ' . $response['error']['message'] . '#' . $response['error']['code']);
+            throw new SPException('Request error: ' . $response['error']['message'] . '#' . $response['error']['code']);
         }
 
         return $response['result'];
@@ -111,6 +110,15 @@ class spJsonRPC
 
         return curl_exec($curl);
     }
+}
+
+if (!class_exists('SPException')) {
+    /**
+     * Exception
+     *
+     * @author sskaje http://sskaje.me/
+     */
+    class SPException extends Exception{}
 }
 
 # EOF
